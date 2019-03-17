@@ -36,12 +36,15 @@ def _validate_line(i, match, match_tok, line):
                           f' but received `{line}` instead')
 
 
-def _validate_filter(match_obj, filter_string, lexer_ptr):
-    """ Helper to throw errors based on matched filter """
+def _validate_and_parse_filter(match_obj, filter_string, lexer_ptr):
+    """ Helper to throw errors based on matched filter and also parse the filter
+    This helper guarantees to return a triple tuple of (subject, op, obj), where
+    each entry is non-null and validated to fit the appropriate types for the op
+    """
     if not match_obj:
         raise SyntaxError(
             f'Could not parse filter {filter_string}\n{" " * len("SyntaxError: Could not parse filter ")}'
-            f'{" " * lexer_ptr}^ SyntaxError starting here\n'
+            f'{" " * (lexer_ptr+1)}^ SyntaxError starting here\n'
         )
     s = match_obj.group('subject')
     op = match_obj.group('op')
@@ -52,6 +55,23 @@ def _validate_filter(match_obj, filter_string, lexer_ptr):
         raise SyntaxError(f'Unable to parse selector {s}')
     if op not in valid_ops:
         raise SyntaxError(f'Invalid filter op {op}')
+
+    # Validate string or int objects
+    if obj[0] == "'" or obj[-1] == "'":
+        if len(obj) < 2 or obj[0] != "'" or obj[-1] != "'":
+            raise SyntaxError(f'Invalid filter object {obj} - is this a string?')
+        obj = obj[1:-1]  # splice out the ' on the start and end of the string
+    elif obj == 'true':
+        obj = True
+    elif obj == 'false':
+        obj = False
+    else:
+        try:
+            obj = int(obj)
+        except ValueError:
+            raise SyntaxError(f'Invalid filter object {obj} - must be one of \'string\', <int>, true or false')
+
+    return s, op, obj
 
 
 filter_regex = re.compile(r"^(?P<subject>\*|all|any) (?P<op>[^\s]+) (?P<object>'?\w+'?)")
@@ -79,15 +99,14 @@ def _get_filter_tokens_from_string(s):
             filter_toks += (Toks.FilterBinaryLogicToken(logic_op='and'),)
             lexer_ptr += len('and ')
             continue
-        elif filters[lexer_ptr:lexer_ptr+4] == 'or ':
+        elif filters[lexer_ptr:lexer_ptr+3] == 'or ':
             filter_toks += (Toks.FilterBinaryLogicToken(logic_op='or'),)
             lexer_ptr += len('or ')
             continue
         else:
-            print(filter_regex.match(filters[lexer_ptr:]))
             m = filter_regex.match(filters[lexer_ptr:])
-            _validate_filter(m, s, lexer_ptr)
-            filter_toks += (Toks.FilterBoolToken(sel=m.group('subject'), op=m.group('op'), val=m.group('object')),)
+            sel, op, val = _validate_and_parse_filter(m, s, lexer_ptr)
+            filter_toks += (Toks.FilterBoolToken(sel=sel, op=op, val=val),)
             lexer_ptr += m.end() - m.start()
     return filter_toks
 
