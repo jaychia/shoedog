@@ -45,14 +45,14 @@ def test_tokenizer_filters1():
 def test_tokenizer_filters2():
     query = '''
        Sample {
-         field1 [* == 'hi' and * <= 3]
+         field1 [* == 4 and * <= 3]
        }
     '''
     assert tokenize(query) == (
         Toks.OpenObjectToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
-        Toks.FilterBoolToken(sel='*', op='==', val='hi'),
+        Toks.FilterBoolToken(sel='*', op='==', val=4),
         Toks.FilterBinaryLogicToken(logic_op='and'),
         Toks.FilterBoolToken(sel='*', op='<=', val=3),
         Toks.FilterEndToken(),
@@ -63,7 +63,7 @@ def test_tokenizer_filters2():
 def test_tokenizer_filters3():
     query = '''
        Sample {
-         field1 [(* == 'hi') and (* <= 3)]
+         field1 [(* == 'hi') and (* != 'bye')]
        }
     '''
     assert tokenize(query) == (
@@ -75,7 +75,7 @@ def test_tokenizer_filters3():
         Toks.FilterCloseParanToken(),
         Toks.FilterBinaryLogicToken(logic_op='and'),
         Toks.FilterOpenParanToken(),
-        Toks.FilterBoolToken(sel='*', op='<=', val=3),
+        Toks.FilterBoolToken(sel='*', op='!=', val='bye'),
         Toks.FilterCloseParanToken(),
         Toks.FilterEndToken(),
         Toks.CloseObjectToken(),
@@ -85,7 +85,7 @@ def test_tokenizer_filters3():
 def test_tokenizer_filters4():
     query = '''
        Sample {
-         field1 [((* == 'hi') and (* <= 3))]
+         field1 [((* == 4) and (* <= 3))]
        }
     '''
     assert tokenize(query) == (
@@ -94,7 +94,7 @@ def test_tokenizer_filters4():
         Toks.FilterStartToken(),
         Toks.FilterOpenParanToken(),
         Toks.FilterOpenParanToken(),
-        Toks.FilterBoolToken(sel='*', op='==', val='hi'),
+        Toks.FilterBoolToken(sel='*', op='==', val=4),
         Toks.FilterCloseParanToken(),
         Toks.FilterBinaryLogicToken(logic_op='and'),
         Toks.FilterOpenParanToken(),
@@ -109,7 +109,7 @@ def test_tokenizer_filters4():
 def test_tokenizer_filters4():
     query = '''
        Sample {
-         field1 [((* == 'hi') and (* <= 3)) or (* != 9)]
+         field1 [((* == 4) and (* <= 3)) or (* != 9)]
        }
     '''
     assert tokenize(query) == (
@@ -118,7 +118,7 @@ def test_tokenizer_filters4():
         Toks.FilterStartToken(),
         Toks.FilterOpenParanToken(),
         Toks.FilterOpenParanToken(),
-        Toks.FilterBoolToken(sel='*', op='==', val='hi'),
+        Toks.FilterBoolToken(sel='*', op='==', val=4),
         Toks.FilterCloseParanToken(),
         Toks.FilterBinaryLogicToken(logic_op='and'),
         Toks.FilterOpenParanToken(),
