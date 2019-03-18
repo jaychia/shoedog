@@ -166,7 +166,7 @@ def test_tokenizer_filters7():
     )
 
 
-def test_tokenizer_subobject_filters():
+def test_tokenizer_subobject_filters1():
     query = '''
        Sample {
          field1 [* in ['foo', 'bar']]
@@ -183,6 +183,31 @@ def test_tokenizer_subobject_filters():
         Toks.FilterEndToken(),
         Toks.OpenObjectToken(query_model='tube'),
         Toks.CastToken(cast_class='CastTube'),
+        Toks.AttributeToken(attribute_name='field2'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='==', val=3),
+        Toks.FilterEndToken(),
+        Toks.CloseObjectToken(),
+        Toks.CloseObjectToken(),
+    )
+
+
+def test_tokenizer_subobject_filters2():
+    query = '''
+       Sample {
+         field1 [* in ['foo', 'bar']]
+         tube {
+           field2 [* == 3]
+         }
+       }
+    '''
+    assert tokenize(query) == (
+        Toks.OpenObjectToken(query_model='Sample'),
+        Toks.AttributeToken(attribute_name='field1'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='in', val=['foo', 'bar']),
+        Toks.FilterEndToken(),
+        Toks.OpenObjectToken(query_model='tube'),
         Toks.AttributeToken(attribute_name='field2'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='==', val=3),
