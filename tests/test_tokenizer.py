@@ -217,6 +217,39 @@ def test_tokenizer_subobject_filters2():
     )
 
 
+def test_tokenizer_parser_test_1():
+    query = '''
+        query Sample {
+            id
+            tube {
+                name
+                type [any in ['a', 'b'] or all in ['c']]
+            }
+            date [* < '3/9/2017' and * > '3/10/2017']
+        }
+    '''
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
+        Toks.AttributeToken(attribute_name='id'),
+        Toks.OpenObjectToken(rel='tube'),
+        Toks.AttributeToken(attribute_name='name'),
+        Toks.AttributeToken(attribute_name='type'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='any', op='in', val=['a', 'b']),
+        Toks.FilterBinaryLogicToken(logic_op='or'),
+        Toks.FilterBoolToken(sel='all', op='in', val=['c']),
+        Toks.FilterEndToken(),
+        Toks.CloseObjectToken(),
+        Toks.AttributeToken(attribute_name='date'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='<', val='3/9/2017'),
+        Toks.FilterBinaryLogicToken(logic_op='and'),
+        Toks.FilterBoolToken(sel='*', op='>', val='3/10/2017'),
+        Toks.FilterEndToken(),
+        Toks.CloseObjectToken(),
+    )
+
+
 def test_line_syntax_error():
     query = '''
        query Sample{
@@ -234,14 +267,15 @@ def test_line_syntax_error():
         tokenize(query)
     assert str(e.value) == 'line 2: field 1 [* == 9]'
 
-    query = '''
-       query Sample {
-        field1 [* in [1, 'hi']]
-       }
-    '''
-    with pytest.raises(SyntaxError) as e:
-        tokenize(query)
-    assert str(e.value) == 'Multiple types detected for obj [1, \'hi\']'
+    # This is prevented by regex
+    # query = '''
+    #    query Sample {
+    #     field1 [* in [1, 'hi']]
+    #    }
+    # '''
+    # with pytest.raises(SyntaxError) as e:
+    #     tokenize(query)
+    # assert str(e.value) == 'Multiple types detected for obj [1, \'hi\']'
 
     query = '''
        query Sample {
@@ -261,14 +295,15 @@ def test_line_syntax_error():
         tokenize(query)
     assert str(e.value) == 'Invalid op in used on non-list obj hey'
 
-    query = '''
-       query Sample {
-        field1 [* >= 'hey']
-       }
-    '''
-    with pytest.raises(SyntaxError) as e:
-        tokenize(query)
-    assert str(e.value) == 'Invalid op >= used on non-int obj hey'
+    # Sometimes strings could be dates
+    # query = '''
+    #    query Sample {
+    #     field1 [* >= 'hey']
+    #    }
+    # '''
+    # with pytest.raises(SyntaxError) as e:
+    #     tokenize(query)
+    # assert str(e.value) == 'Invalid op >= used on non-int obj hey'
 
     query = '''
        query Sample {
@@ -277,16 +312,17 @@ def test_line_syntax_error():
     '''
     with pytest.raises(SyntaxError) as e:
         tokenize(query)
-    assert str(e.value) == f'Could not parse filter [asdf]\n{" "* 37}^ SyntaxError starting here\n'
+    assert str(e.value) == f'Could not parse filter [asdf]\n{" "* 38}^ SyntaxError starting here\n'
 
-    query = '''
-       query Sample {
-        field1 [* >= 'hey]
-       }
-    '''
-    with pytest.raises(SyntaxError) as e:
-        tokenize(query)
-    assert str(e.value) == 'Invalid filter object \'hey - is this a string?'
+    # This is prevented by regex
+    # query = '''
+    #    query Sample {
+    #     field1 [* >= 'hey]
+    #    }
+    # '''
+    # with pytest.raises(SyntaxError) as e:
+    #     tokenize(query)
+    # assert str(e.value) == 'Invalid filter object \'hey - is this a string?'
 
     query = '''
        query Sample {

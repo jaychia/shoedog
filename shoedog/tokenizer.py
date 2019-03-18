@@ -89,8 +89,6 @@ def _validate_and_parse_filter(match_obj, filter_string, lexer_ptr):
     obj = _convert_and_validate_type(obj)
 
     # Validate op on obj
-    if op in integer_only_ops and not isinstance(obj, int):
-        raise SyntaxError(f'Invalid op {op} used on non-int obj {obj}')
     if op in array_only_ops and not isinstance(obj, list):
         raise SyntaxError(f'Invalid op {op} used on non-list obj {obj}')
     if op not in array_only_ops and isinstance(obj, list):
@@ -101,12 +99,11 @@ def _validate_and_parse_filter(match_obj, filter_string, lexer_ptr):
     return s, op, obj
 
 
-filter_regex = re.compile(r"^(?P<subject>\*|all|any) (?P<op>[^\s]+) (?P<object>(\[('?\w+'?,? ?)*\])|('?\w+'?))")
+filter_regex = re.compile(r"(?P<subject>\*|all|any) (?P<op>[^\s]+) (?P<object>(\[('[^']*',? ?)*\])|(\[(([0-9]+|\btrue\b|\bfalse\b),? ?)*\])|('[^']*')|([0-9]+)|\btrue\b|\bfalse\b)")
 
 
-def _get_filter_tokens_from_string(s):
+def _get_filter_tokens_from_string(filters):
     filter_toks = tuple()
-    filters = s[1:-1]
 
     lexer_ptr = 0
     while lexer_ptr < len(filters):
@@ -130,19 +127,31 @@ def _get_filter_tokens_from_string(s):
             filter_toks += (Toks.FilterBinaryLogicToken(logic_op='or'),)
             lexer_ptr += len('or ')
             continue
+        elif filters[lexer_ptr] == '[':
+            filter_toks += (Toks.FilterStartToken(),)
+            lexer_ptr += 1
+            continue
+        elif filters[lexer_ptr] == ']':
+            filter_toks += (Toks.FilterEndToken(),)
+            lexer_ptr += 1
+            assert lexer_ptr == len(filters), \
+                'Should not be adding FilterEnd if lexer_ptr not at end of filter'
+            continue
         else:
+            print(filters[lexer_ptr])
             m = filter_regex.match(filters[lexer_ptr:])
-            sel, op, val = _validate_and_parse_filter(m, s, lexer_ptr)
+            sel, op, val = _validate_and_parse_filter(m, filters, lexer_ptr)
             filter_toks += (Toks.FilterBoolToken(sel=sel, op=op, val=val),)
-            lexer_ptr += m.end() - m.start()
+            lexer_ptr += m.end('object') - m.start()
+            continue
 
     # Check all filters to make sure selectors apply to the same type
     bool_toks = [tok for tok in filter_toks if isinstance(tok, Toks.FilterBoolToken)]
     if not all(tok.sel in array_only_selectors for tok in bool_toks) and \
             not all(tok.sel not in array_only_selectors for tok in bool_toks):
-        raise SyntaxError(f'A mix of selectors was provided for filter {s}')
+        raise SyntaxError(f'A mix of selectors was provided for filter {filters}')
     if len({type(tok.val) for tok in bool_toks}) > 1:
-        raise SyntaxError(f'Detected a mix of object types for filter {s}')
+        raise SyntaxError(f'Detected a mix of object types for filter {filters}')
 
     return filter_toks
 
@@ -174,9 +183,7 @@ def tokenize(querystring):
         elif isinstance(line_token, LineToks.AttributeLine):
             ast_tokens += (Toks.AttributeToken(attribute_name=line_token.attribute_name),)
             if line_token.filters:
-                ast_tokens += (Toks.FilterStartToken(),)
                 ast_tokens += _get_filter_tokens_from_string(line_token.filters)
-                ast_tokens += (Toks.FilterEndToken(),)
         elif isinstance(line_token, LineToks.CloseObjectLine):
             ast_tokens += (Toks.CloseObjectToken(),)
         else:
