@@ -23,7 +23,7 @@ class LineToks:
 
 
 regexes = {
-    LineToks.OpenObjectLine: re.compile(r'^(?P<query_model>[A-Z]\w*)(?P<cast_class> \([A-Z]\w*\))? {$'),
+    LineToks.OpenObjectLine: re.compile(r'^(?P<query_model>[A-Za-z]\w*)( \((?P<cast_class>[A-Z]\w*)\))? {$'),
     LineToks.CloseObjectLine: re.compile(r'^}$'),
     LineToks.AttributeLine: re.compile(r"^(?P<attribute_name>\w*)[\s]?(?P<filters>\[.+\])?$")
 }
@@ -92,11 +92,13 @@ def _validate_and_parse_filter(match_obj, filter_string, lexer_ptr):
         raise SyntaxError(f'Invalid op {op} used on non-list obj {obj}')
     if op not in array_only_ops and isinstance(obj, list):
         raise SyntaxError(f'Invalid op {op} used on list obj {obj}')
+    if isinstance(obj, bool) and op != '==':
+        raise SyntaxError(f'Invalid op {op} used on bool obj {obj}: only == can be used on bools')
 
     return s, op, obj
 
 
-filter_regex = re.compile(r"^(?P<subject>\*|all|any) (?P<op>[^\s]+) (?P<object>'?\w+'?)")
+filter_regex = re.compile(r"^(?P<subject>\*|all|any) (?P<op>[^\s]+) (?P<object>(\[('?\w+'?,? ?)*\])|('?\w+'?))")
 
 
 def _get_filter_tokens_from_string(s):
