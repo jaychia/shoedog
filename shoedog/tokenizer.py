@@ -4,8 +4,9 @@ from shoedog.consts import array_only_selectors, valid_ops, valid_selectors, int
 
 
 class Toks:
+    RootQueryToken = namedtuple('RootQueryToken', ['query_model'])
     CastToken = namedtuple('CastToken', ['cast_class'])
-    OpenObjectToken = namedtuple('OpenObjectToken', ['query_model'])
+    OpenObjectToken = namedtuple('OpenObjectToken', ['rel'])
     CloseObjectToken = namedtuple('CloseObjectToken', [])
     AttributeToken = namedtuple('AttributeToken', ['attribute_name'])
     FilterBoolToken = namedtuple('FilterBoolToken', ['sel', 'op', 'val'])
@@ -17,13 +18,15 @@ class Toks:
 
 
 class LineToks:
-    OpenObjectLine = namedtuple('OpenObjectLine', ['query_model', 'cast_class'])
+    RootQueryLine = namedtuple('RootQueryLine', ['query_model'])
+    OpenObjectLine = namedtuple('OpenObjectLine', ['rel', 'cast_class'])
     AttributeLine = namedtuple('AttributeLine', ['attribute_name', 'filters'])
     CloseObjectLine = namedtuple('CloseObjectLine', [])
 
 
 regexes = {
-    LineToks.OpenObjectLine: re.compile(r'^(?P<query_model>[A-Za-z]\w*)( \((?P<cast_class>[A-Z]\w*)\))? {$'),
+    LineToks.RootQueryLine: re.compile(r'^query (?P<query_model>[A-Za-z]\w*) {$'),
+    LineToks.OpenObjectLine: re.compile(r'^(?P<rel>[A-Za-z]\w*)( \((?P<cast_class>[A-Z]\w*)\))? {$'),
     LineToks.CloseObjectLine: re.compile(r'^}$'),
     LineToks.AttributeLine: re.compile(r"^(?P<attribute_name>\w*)[\s]?(?P<filters>\[.+\])?$")
 }
@@ -31,7 +34,7 @@ regexes = {
 
 def _validate_line(i, match, match_tok, line):
     """ Helper to throw errors based on state of tokenizer """
-    if i == 0 and match_tok.__name__ != LineToks.OpenObjectLine.__name__:
+    if i == 0 and match_tok.__name__ != LineToks.RootQueryLine.__name__:
         raise SyntaxError(f'line {i+1}: Expected a query model on the first line'
                           f' but received `{line}` instead')
 
@@ -162,9 +165,10 @@ def tokenize(querystring):
 
         ast_tokens = tuple()
         line_token = match_tok(**match.groupdict())
-
-        if isinstance(line_token, LineToks.OpenObjectLine):
-            ast_tokens += (Toks.OpenObjectToken(query_model=line_token.query_model),)
+        if isinstance(line_token, LineToks.RootQueryLine):
+            ast_tokens += (Toks.RootQueryToken(query_model=line_token.query_model),)
+        elif isinstance(line_token, LineToks.OpenObjectLine):
+            ast_tokens += (Toks.OpenObjectToken(rel=line_token.rel),)
             if line_token.cast_class:
                 ast_tokens += (Toks.CastToken(cast_class=line_token.cast_class),)
         elif isinstance(line_token, LineToks.AttributeLine):
@@ -180,4 +184,4 @@ def tokenize(querystring):
                                       f'{match_tok} not implemented')
         tokens += ast_tokens
 
-    return tokens
+    return (token for token in tokens)

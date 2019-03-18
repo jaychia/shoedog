@@ -4,23 +4,23 @@ from shoedog.tokenizer import Toks, tokenize
 
 def test_basic_tokenizer_no_fields():
     query = '''
-       Sample {
+       query Sample {
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.CloseObjectToken(),
     )
 
 
 def test_tokenizer_one_field():
     query = '''
-       Sample {
+       query Sample {
          field1
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.CloseObjectToken(),
     )
@@ -28,12 +28,12 @@ def test_tokenizer_one_field():
 
 def test_tokenizer_filters1():
     query = '''
-       Sample {
+       query Sample {
          field1 [* == 'hi']
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='==', val='hi'),
@@ -44,12 +44,12 @@ def test_tokenizer_filters1():
 
 def test_tokenizer_filters2():
     query = '''
-       Sample {
+       query Sample {
          field1 [* == 4 and * <= 3]
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='==', val=4),
@@ -62,12 +62,12 @@ def test_tokenizer_filters2():
 
 def test_tokenizer_filters3():
     query = '''
-       Sample {
+       query Sample {
          field1 [(* == 'hi') and (* != 'bye')]
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterOpenParanToken(),
@@ -84,12 +84,12 @@ def test_tokenizer_filters3():
 
 def test_tokenizer_filters4():
     query = '''
-       Sample {
+       query Sample {
          field1 [((* == 4) and (* <= 3))]
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterOpenParanToken(),
@@ -108,12 +108,12 @@ def test_tokenizer_filters4():
 
 def test_tokenizer_filters5():
     query = '''
-       Sample {
+       query Sample {
          field1 [((* == 4) and (* <= 3)) or (* != 9)]
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterOpenParanToken(),
@@ -136,12 +136,12 @@ def test_tokenizer_filters5():
 
 def test_tokenizer_filters6():
     query = '''
-       Sample {
+       query Sample {
          field1 [* in ['foo', 'bar']]
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='in', val=['foo', 'bar']),
@@ -152,12 +152,12 @@ def test_tokenizer_filters6():
 
 def test_tokenizer_filters7():
     query = '''
-       Sample {
+       query Sample {
          field1 [* in [true, false]]
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='in', val=[True, False]),
@@ -168,20 +168,20 @@ def test_tokenizer_filters7():
 
 def test_tokenizer_subobject_filters1():
     query = '''
-       Sample {
+       query Sample {
          field1 [* in ['foo', 'bar']]
          tube (CastTube) {
            field2 [* == 3]
          }
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='in', val=['foo', 'bar']),
         Toks.FilterEndToken(),
-        Toks.OpenObjectToken(query_model='tube'),
+        Toks.OpenObjectToken(rel='tube'),
         Toks.CastToken(cast_class='CastTube'),
         Toks.AttributeToken(attribute_name='field2'),
         Toks.FilterStartToken(),
@@ -194,20 +194,20 @@ def test_tokenizer_subobject_filters1():
 
 def test_tokenizer_subobject_filters2():
     query = '''
-       Sample {
+       query Sample {
          field1 [* in ['foo', 'bar']]
          tube {
            field2 [* == 3]
          }
        }
     '''
-    assert tokenize(query) == (
-        Toks.OpenObjectToken(query_model='Sample'),
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
         Toks.AttributeToken(attribute_name='field1'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='in', val=['foo', 'bar']),
         Toks.FilterEndToken(),
-        Toks.OpenObjectToken(query_model='tube'),
+        Toks.OpenObjectToken(rel='tube'),
         Toks.AttributeToken(attribute_name='field2'),
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='*', op='==', val=3),
@@ -219,14 +219,14 @@ def test_tokenizer_subobject_filters2():
 
 def test_line_syntax_error():
     query = '''
-       Sample{
+       query Sample{
     '''
     with pytest.raises(SyntaxError) as e:
         tokenize(query)
-    assert str(e.value) == 'line 1: Sample{'
+    assert str(e.value) == 'line 1: query Sample{'
 
     query = '''
-       Sample {
+       query Sample {
         field 1 [* == 9]
        }
     '''
@@ -235,7 +235,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'line 2: field 1 [* == 9]'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* in [1, 'hi']]
        }
     '''
@@ -244,7 +244,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'Multiple types detected for obj [1, \'hi\']'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* == [1, 2]]
        }
     '''
@@ -253,7 +253,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'Invalid op == used on list obj [1, 2]'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* in 'hey']
        }
     '''
@@ -262,7 +262,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'Invalid op in used on non-list obj hey'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* >= 'hey']
        }
     '''
@@ -271,7 +271,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'Invalid op >= used on non-int obj hey'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [asdf]
        }
     '''
@@ -280,7 +280,7 @@ def test_line_syntax_error():
     assert str(e.value) == f'Could not parse filter [asdf]\n{" "* 37}^ SyntaxError starting here\n'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* >= 'hey]
        }
     '''
@@ -289,7 +289,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'Invalid filter object \'hey - is this a string?'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* != true]
        }
     '''
@@ -298,7 +298,7 @@ def test_line_syntax_error():
     assert str(e.value) == 'Invalid op != used on bool obj True: only == can be used on bools'
 
     query = '''
-       Sample {
+       query Sample {
         field1 [* == true and any == false]
        }
     '''
