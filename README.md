@@ -17,7 +17,7 @@ shoedoggify(app, db)
 The above code will set up a `/shoedog` endpoint on your application that takes a `POST` request. The payload on the `POST` request is a shoedog payload, with the following syntax:
 
 ```
-Company {
+query Company {
     name
     year_founded [(* > 1994 and * < 2017) or * == 2019]
     investors {
