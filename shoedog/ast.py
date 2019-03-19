@@ -1,14 +1,16 @@
+from sqlalchemy import inspect
 from shoedog.tokenizer import Toks
 from shoedog.utils import peek
+from shoedog.consts import binary_logical_ops
 
 
 class AstNode:
     """ A node in the AST tree """
-    def __init__(self):
-        self._children = tuple()
+    def __init__(self, children):
+        self.children = tuple((x for x in children))
 
     def add_child(self, child):
-        self._children += (child,)
+        self.children += (child,)
 
     def eval(self, query):
         raise NotImplementedError(f'Node {self.__name__} has not implemented eval')
@@ -16,31 +18,80 @@ class AstNode:
 
 class RootNode(AstNode):
     """ The root node of the AST representing the model at the root of the query """
-    def __init__(self, registry, root_model_name):
-        super().__init__()
+    def __init__(self, registry, root_model_name, children=[]):
+        super().__init__(children)
         self.model = registry.get_model_with_name(root_model_name)
+
+    def __eq__(self, other):
+        return type(other) == type(self) and \
+            self.model == other.model and \
+            len(self.children) == len(other.children) and \
+            all([x == y for x, y in zip(self.children, other.children)])
 
 
 class RelationshipNode(AstNode):
     """ The root node of the AST representing a relationship """
-    def __init__(self, registry, root_model, rel):
-        super().__init__()
+    def __init__(self, registry, root_model, rel, children=[]):
+        super().__init__(children)
         self.rel = getattr(root_model, rel)
         self.model = registry.get_model_with_rel(self.rel)
+
+    def __eq__(self, other):
+        return type(other) == type(self) and \
+            self.model == other.model and \
+            inspect(self.rel).mapper.class_ == inspect(other.rel).mapper.class_ and \
+            self.rel.key == other.rel.key and \
+            len(self.children) == len(other.children) and \
+            all([x == y for x, y in zip(self.children, other.children)])
 
 
 class AttributeNode(AstNode):
     """ The root node of the AST representing an attribute """
-    def __init__(self, registry, root_model, attr_name):
-        super().__init__()
+    def __init__(self, registry, root_model, attr_name, children=[]):
+        super().__init__(children)
         self.attr = getattr(root_model, attr_name)
+
+    def __eq__(self, other):
+        return type(other) == type(self) and \
+            inspect(self.attr).class_ == inspect(other.attr).class_ and \
+            self.attr.key == other.attr.key and \
+            len(self.children) == len(other.children) and \
+            all([x == y for x, y in zip(self.children, other.children)])
 
 
 class FilterNode(AstNode):
-    """ The root node of the AST representing a set of filters """
-    def __init__(self):
-        # TODO: Fill out data structure
-        super().__init__()
+    """ The AST node representing a single filter """
+    def __init__(self, subject, op, obj):
+        # TODO: Type validations here
+        super().__init__([])
+        self.subject = subject
+        self.op = op
+        self.obj = obj
+
+    def __eq__(self, other):
+        return type(other) == type(self) and \
+            self.subject == other.subject and \
+            self.op == other.op and \
+            self.obj == other.obj
+
+    def add_child(self, child):
+        raise NotImplementedError('Cannot add child to FilterNode')
+
+
+class BinaryLogicNode(AstNode):
+    """ The AST node representing a binary logical operator on filters """
+    def __init__(self, op, left, right):
+        super().__init__([])
+        self.op = op
+        self.left = left
+        self.right = right
+
+    def __eq__(self, other):
+        import pdb; pdb.set_trace()
+        return type(other) == type(self) and \
+            self.op == other.op and \
+            self.left == other.left and \
+            self.right == other.right
 
 
 def _tokens_to_ast(root_token, current_model, token_stream, registry):
@@ -50,7 +101,6 @@ def _tokens_to_ast(root_token, current_model, token_stream, registry):
         is non-null. This helper works by calling the appropriate ast node specific
         helper function after introspecting the next token
     """
-    print('_tokens_to_ast', root_token)
     if isinstance(root_token, Toks.RootQueryToken):
         return _root_query_to_ast(root_token, token_stream, registry)
     elif isinstance(root_token, Toks.OpenObjectToken):
@@ -61,25 +111,64 @@ def _tokens_to_ast(root_token, current_model, token_stream, registry):
         assert False, f'Should never be calling _tokens_to_ast on {root_token}'
 
 
-def _filters_to_ast(current_model, attr_name, token_stream, registry):
-    """ Helper to be called when building an ast representing a set of filters
+def _filter_start_to_ast(token_stream):
+    next_token = next(token_stream)
+    if isinstance(next_token, Toks.FilterEndToken):
+        return None, token_stream
+    elif isinstance(next_token, Toks.FilterOpenParanToken):
+        return _filter_open_paran_to_ast(token_stream)
+    elif isinstance(next_token, Toks.FilterBoolToken):
+        return _filter_bool_to_ast(next_token, token_stream)
+    else:
+        assert False, f'Should not have {next_token} after FilterStartToken'
 
-    Requires:
-        current_model: The current SQLAlchemy model being filtered on
-        attr_name: The name of the attribute of the SQLAlchemy model being filtered
-        token_stream: Remaining tokens after parsing attribute (Should start on a
-            FilterStartToken)
-        registry: ModelRegistry
 
-    Returns:
-        root: FilterNode
-        token_stream: generator(Toks) - remaining tokens after parsing filters
-    """
-    # TODO: Logic
-    tok = None
-    while not isinstance(tok, Toks.FilterEndToken):
-        tok = next(token_stream)
-    return FilterNode(), token_stream
+def _filter_open_paran_to_ast(token_stream):
+    next_token = next(token_stream)
+    if isinstance(next_token, Toks.FilterOpenParanToken):
+        return _filter_open_paran_to_ast(token_stream)
+    elif isinstance(next_token, Toks.FilterBoolToken):
+        return _filter_bool_to_ast(next_token, token_stream)
+    else:
+        assert False, f'Should not have {next_token} after FilterStartToken'
+
+
+def _filter_bool_to_ast(tok, token_stream):
+    filter_node = FilterNode(tok.sel, tok.op, tok.val)
+    next_token = next(token_stream)
+    if isinstance(next_token, Toks.FilterBinaryLogicToken):
+        return _filter_binary_logic_to_ast(filter_node, next_token, token_stream)
+    elif isinstance(next_token, Toks.FilterCloseParanToken):
+        next_token, token_stream = peek(token_stream)
+        # Exhaust all following closing paranthesis from token_stream
+        while isinstance(next_token, Toks.FilterCloseParanToken):
+            next(token_stream)
+            next_token, token_stream = peek(token_stream)
+        return filter_node, token_stream
+    elif isinstance(next_token, Toks.FilterEndToken):
+        return filter_node, token_stream
+    else:
+        assert False, f'Should not have {next_token} after FilterBoolToken'
+
+
+def _filter_binary_logic_to_ast(left_bool, tok, token_stream):
+    next_token = next(token_stream)
+    if isinstance(next_token, Toks.FilterOpenParanToken):
+        right_bool, token_stream = _filter_open_paran_to_ast(token_stream)
+    elif isinstance(next_token, Toks.FilterBoolToken):
+        right_bool, token_stream = _filter_bool_to_ast(next_token, token_stream)
+    else:
+        assert False, f'Should not have {next_token} after FilterBinaryLogicToken'
+
+    root = BinaryLogicNode(tok.logic_op, left_bool, right_bool)
+    return root, token_stream
+
+
+def _filters_to_ast(token_stream):
+    tok = next(token_stream)
+    assert isinstance(tok, Toks.FilterStartToken)
+
+    return _filter_start_to_ast(token_stream)
 
 
 def _attribute_to_ast(root_token, current_model, token_stream, registry):
@@ -102,7 +191,7 @@ def _attribute_to_ast(root_token, current_model, token_stream, registry):
     if not isinstance(next_token, Toks.FilterStartToken):
         return root, token_stream
 
-    child = _filters_to_ast(current_model, root_token.attribute_name, token_stream, registry)
+    child, token_stream = _filters_to_ast(token_stream)
     root.add_child(child)
 
     return root, token_stream

@@ -1,7 +1,9 @@
+import pytest
 from shoedog.tokenizer import Toks
-from shoedog.ast import tokens_to_ast
+from shoedog.ast import tokens_to_ast, RootNode, RelationshipNode, \
+    AttributeNode, FilterNode, BinaryLogicNode
 from shoedog.registry import build_registry
-from tests.mock_app import db
+from tests.mock_app import db, Sample, Tube
 
 mock_registry = build_registry(db)
 
@@ -10,7 +12,7 @@ query Sample {
     id
     tube {
         name
-        type [any in ['a', 'b'] or all in ['c']]
+        type [any in ['a', 'b'] or all != 'c']
     }
     date [* < '3/9/2017' and * > '3/10/2017']
 }
@@ -24,7 +26,7 @@ test_token_gen_1 = (x for x in (
     Toks.FilterStartToken(),
     Toks.FilterBoolToken(sel='any', op='in', val=['a', 'b']),
     Toks.FilterBinaryLogicToken(logic_op='or'),
-    Toks.FilterBoolToken(sel='all', op='in', val=['c']),
+    Toks.FilterBoolToken(sel='all', op='!=', val='c'),
     Toks.FilterEndToken(),
     Toks.CloseObjectToken(),
     Toks.AttributeToken(attribute_name='date'),
@@ -36,6 +38,23 @@ test_token_gen_1 = (x for x in (
     Toks.CloseObjectToken(),
 ))
 
+test_token_ast_1 = RootNode(mock_registry, 'Sample', children=[
+    AttributeNode(mock_registry, Sample, 'id'),
+    RelationshipNode(mock_registry, Sample, 'tube', children=[
+        AttributeNode(mock_registry, Tube, 'name'),
+        AttributeNode(mock_registry, Tube, 'type', children=[
+            BinaryLogicNode('or', FilterNode('any', 'in', ['a', 'b']), FilterNode('all', '!=', 'c'))
+        ]),
+    ]),
+    AttributeNode(mock_registry, Sample, 'date', children=[
+        BinaryLogicNode('and', FilterNode('*', '<', '3/9/2017'), FilterNode('*', '>', '3/10/2017'))
+    ])
+])
+
 
 def test_tokens_to_ast():
-    tokens_to_ast(test_token_gen_1, mock_registry)
+    root, stream = tokens_to_ast(test_token_gen_1, mock_registry)
+    with pytest.raises(StopIteration):
+        next(stream)
+
+    assert root == test_token_ast_1

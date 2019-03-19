@@ -150,7 +150,7 @@ def _get_filter_tokens_from_string(filters):
     if not all(tok.sel in array_only_selectors for tok in bool_toks) and \
             not all(tok.sel not in array_only_selectors for tok in bool_toks):
         raise SyntaxError(f'A mix of selectors was provided for filter {filters}')
-    if len({type(tok.val) for tok in bool_toks}) > 1:
+    if str in {type(tok.val) for tok in bool_toks} and int in {type(tok.val) for tok in bool_toks}:
         raise SyntaxError(f'Detected a mix of object types for filter {filters}')
 
     return filter_toks

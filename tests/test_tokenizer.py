@@ -223,7 +223,7 @@ def test_tokenizer_parser_test_1():
             id
             tube {
                 name
-                type [any in ['a', 'b'] or all in ['c']]
+                type [any in ['a', 'b'] or all != 'c']
             }
             date [* < '3/9/2017' and * > '3/10/2017']
         }
@@ -237,7 +237,7 @@ def test_tokenizer_parser_test_1():
         Toks.FilterStartToken(),
         Toks.FilterBoolToken(sel='any', op='in', val=['a', 'b']),
         Toks.FilterBinaryLogicToken(logic_op='or'),
-        Toks.FilterBoolToken(sel='all', op='in', val=['c']),
+        Toks.FilterBoolToken(sel='all', op='!=', val='c'),
         Toks.FilterEndToken(),
         Toks.CloseObjectToken(),
         Toks.AttributeToken(attribute_name='date'),
