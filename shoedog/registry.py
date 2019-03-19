@@ -12,6 +12,11 @@ class ModelRegistry:
         self._name_to_models = {
             model.__name__: model for model in models
         }
+        self._relationships_to_class = {
+            (rel.mapper.class_.__name__, rel.key):
+            rel.mapper.class_ for model in models for rel in inspect(model).relationships
+        }
+        print(self._relationships_to_class)
         # self._tablename_to_models = {
         #     model.__tablename__: model for model in models
         # }
@@ -39,6 +44,12 @@ class ModelRegistry:
         model = self._name_to_models.get(root_model_name)
         if not model:
             raise ModelNotFoundException(f'Could not find model with name {root_model_name}')
+        return model
+
+    def get_model_with_rel(self, rel):
+        model = self._relationships_to_class.get((rel.mapper.class_.__name__, rel.key))
+        if not model:
+            raise ModelNotFoundException(f'Could not find relationship {rel}')
         return model
 
 
