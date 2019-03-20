@@ -1,5 +1,6 @@
-# shoedog
+# shoedog (WIP)
 A flexible, efficient plug-and-play query engine built on top of SQLAlchemy, inspired by GraphQL
+This library is a work in progress!
 
 # Setting up
 ```
