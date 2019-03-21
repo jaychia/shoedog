@@ -225,7 +225,7 @@ def test_tokenizer_parser_test_1():
                 name
                 type [any in ['a', 'b'] or all != 'c']
             }
-            date [* < '3/9/2017' and * > '3/10/2017']
+            date [((* < '3/9/2017') or * == '3/3/2017') and ((* > '3/10/2017'))]
         }
     '''
     assert tuple(tokenize(query)) == (
@@ -242,9 +242,19 @@ def test_tokenizer_parser_test_1():
         Toks.CloseObjectToken(),
         Toks.AttributeToken(attribute_name='date'),
         Toks.FilterStartToken(),
+        Toks.FilterOpenParanToken(),
+        Toks.FilterOpenParanToken(),
         Toks.FilterBoolToken(sel='*', op='<', val='3/9/2017'),
+        Toks.FilterCloseParanToken(),
+        Toks.FilterBinaryLogicToken(logic_op='or'),
+        Toks.FilterBoolToken(sel='*', op='==', val='3/3/2017'),
+        Toks.FilterCloseParanToken(),
         Toks.FilterBinaryLogicToken(logic_op='and'),
+        Toks.FilterOpenParanToken(),
+        Toks.FilterOpenParanToken(),
         Toks.FilterBoolToken(sel='*', op='>', val='3/10/2017'),
+        Toks.FilterCloseParanToken(),
+        Toks.FilterCloseParanToken(),
         Toks.FilterEndToken(),
         Toks.CloseObjectToken(),
     )

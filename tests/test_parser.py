@@ -14,7 +14,7 @@ query Sample {
         name
         type [any in ['a', 'b'] or all != 'c']
     }
-    date [* < '3/9/2017' and * > '3/10/2017']
+    date [((* < '3/9/2017') or * == '3/3/2017') and ((* > '3/10/2017'))]
 }
 """
 test_token_gen_1 = (x for x in (
@@ -31,9 +31,19 @@ test_token_gen_1 = (x for x in (
     Toks.CloseObjectToken(),
     Toks.AttributeToken(attribute_name='date'),
     Toks.FilterStartToken(),
+    Toks.FilterOpenParanToken(),
+    Toks.FilterOpenParanToken(),
     Toks.FilterBoolToken(sel='*', op='<', val='3/9/2017'),
+    Toks.FilterCloseParanToken(),
+    Toks.FilterBinaryLogicToken(logic_op='or'),
+    Toks.FilterBoolToken(sel='*', op='==', val='3/3/2017'),
+    Toks.FilterCloseParanToken(),
     Toks.FilterBinaryLogicToken(logic_op='and'),
+    Toks.FilterOpenParanToken(),
+    Toks.FilterOpenParanToken(),
     Toks.FilterBoolToken(sel='*', op='>', val='3/10/2017'),
+    Toks.FilterCloseParanToken(),
+    Toks.FilterCloseParanToken(),
     Toks.FilterEndToken(),
     Toks.CloseObjectToken(),
 ))
@@ -47,7 +57,11 @@ test_token_ast_1 = RootNode(mock_registry, 'Sample', children=[
         ]),
     ]),
     AttributeNode(mock_registry, Sample, 'date', children=[
-        BinaryLogicNode('and', FilterNode('*', '<', '3/9/2017'), FilterNode('*', '>', '3/10/2017'))
+        BinaryLogicNode(
+            'and',
+            BinaryLogicNode('or', FilterNode('*', '<', '3/9/2017'), FilterNode('*', '==', '3/3/2017')),
+            FilterNode('*', '>', '3/10/2017')
+        )
     ])
 ])
 
@@ -56,5 +70,4 @@ def test_tokens_to_ast():
     root, stream = tokens_to_ast(test_token_gen_1, mock_registry)
     with pytest.raises(StopIteration):
         next(stream)
-
     assert root == test_token_ast_1

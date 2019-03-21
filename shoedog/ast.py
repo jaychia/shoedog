@@ -15,6 +15,9 @@ class AstNode:
     def eval(self, query):
         raise NotImplementedError(f'Node {self.__name__} has not implemented eval')
 
+    def __repr__(self):
+        return self.as_string() + '\n' + '\n'.join(['\n'.join([f'\t{l}' for l in c.__repr__().split('\n')]) for c in self.children])
+
 
 class RootNode(AstNode):
     """ The root node of the AST representing the model at the root of the query """
@@ -27,6 +30,9 @@ class RootNode(AstNode):
             self.model == other.model and \
             len(self.children) == len(other.children) and \
             all([x == y for x, y in zip(self.children, other.children)])
+
+    def as_string(self):
+        return f'<RootNode {self.model.__name__}>'
 
 
 class RelationshipNode(AstNode):
@@ -44,6 +50,9 @@ class RelationshipNode(AstNode):
             len(self.children) == len(other.children) and \
             all([x == y for x, y in zip(self.children, other.children)])
 
+    def as_string(self):
+        return f'<RelationshipNode {self.model.__name__}.{self.rel.key}>'
+
 
 class AttributeNode(AstNode):
     """ The root node of the AST representing an attribute """
@@ -57,6 +66,9 @@ class AttributeNode(AstNode):
             self.attr.key == other.attr.key and \
             len(self.children) == len(other.children) and \
             all([x == y for x, y in zip(self.children, other.children)])
+
+    def as_string(self):
+        return f'<AttributeNode {self.attr.key}>'
 
 
 class FilterNode(AstNode):
@@ -77,6 +89,9 @@ class FilterNode(AstNode):
     def add_child(self, child):
         raise NotImplementedError('Cannot add child to FilterNode')
 
+    def as_string(self):
+        return f'<FilterNode {self.subject} {self.op} {self.obj}>'
+
 
 class BinaryLogicNode(AstNode):
     """ The AST node representing a binary logical operator on filters """
@@ -87,11 +102,16 @@ class BinaryLogicNode(AstNode):
         self.right = right
 
     def __eq__(self, other):
-        import pdb; pdb.set_trace()
         return type(other) == type(self) and \
             self.op == other.op and \
             self.left == other.left and \
             self.right == other.right
+
+    def as_string(self):
+        return f'<BinaryLogicNode {self.op}>'
+
+    def __repr__(self):
+        return self.as_string() + '\n' + '\n'.join(['\n'.join([f'\t{l}' for l in c.__repr__().split('\n')]) for c in [self.left, self.right]])
 
 
 def _tokens_to_ast(root_token, current_model, token_stream, registry):
@@ -111,26 +131,24 @@ def _tokens_to_ast(root_token, current_model, token_stream, registry):
         assert False, f'Should never be calling _tokens_to_ast on {root_token}'
 
 
-def _filter_start_to_ast(token_stream):
-    next_token = next(token_stream)
-    if isinstance(next_token, Toks.FilterEndToken):
-        return None, token_stream
-    elif isinstance(next_token, Toks.FilterOpenParanToken):
-        return _filter_open_paran_to_ast(token_stream)
-    elif isinstance(next_token, Toks.FilterBoolToken):
-        return _filter_bool_to_ast(next_token, token_stream)
-    else:
-        assert False, f'Should not have {next_token} after FilterStartToken'
-
-
 def _filter_open_paran_to_ast(token_stream):
     next_token = next(token_stream)
     if isinstance(next_token, Toks.FilterOpenParanToken):
-        return _filter_open_paran_to_ast(token_stream)
+        ast, token_stream = _filter_open_paran_to_ast(token_stream)
     elif isinstance(next_token, Toks.FilterBoolToken):
-        return _filter_bool_to_ast(next_token, token_stream)
+        ast, token_stream = _filter_bool_to_ast(next_token, token_stream)
     else:
-        assert False, f'Should not have {next_token} after FilterStartToken'
+        assert False, f'Should not have {next_token} after OpenParan'
+
+    # At this point, we have the ast from inside the open paran and token_stream
+    # just passed a close paranthesis
+    next_token = next(token_stream)
+    if isinstance(next_token, Toks.FilterEndToken) or isinstance(next_token, Toks.FilterCloseParanToken):
+        return ast, token_stream
+    elif isinstance(next_token, Toks.FilterBinaryLogicToken):
+        return _filter_binary_logic_to_ast(ast, next_token, token_stream)
+    else:
+        assert False, f'Should not have {next_token} after CloseParan'
 
 
 def _filter_bool_to_ast(tok, token_stream):
@@ -138,14 +156,7 @@ def _filter_bool_to_ast(tok, token_stream):
     next_token = next(token_stream)
     if isinstance(next_token, Toks.FilterBinaryLogicToken):
         return _filter_binary_logic_to_ast(filter_node, next_token, token_stream)
-    elif isinstance(next_token, Toks.FilterCloseParanToken):
-        next_token, token_stream = peek(token_stream)
-        # Exhaust all following closing paranthesis from token_stream
-        while isinstance(next_token, Toks.FilterCloseParanToken):
-            next(token_stream)
-            next_token, token_stream = peek(token_stream)
-        return filter_node, token_stream
-    elif isinstance(next_token, Toks.FilterEndToken):
+    elif isinstance(next_token, Toks.FilterCloseParanToken) or isinstance(next_token, Toks.FilterEndToken):
         return filter_node, token_stream
     else:
         assert False, f'Should not have {next_token} after FilterBoolToken'
@@ -168,7 +179,14 @@ def _filters_to_ast(token_stream):
     tok = next(token_stream)
     assert isinstance(tok, Toks.FilterStartToken)
 
-    return _filter_start_to_ast(token_stream)
+    tok = next(token_stream)
+    if isinstance(tok, Toks.FilterBoolToken):
+        return _filter_bool_to_ast(tok, token_stream)
+    elif isinstance(tok, Toks.FilterOpenParanToken):
+        return _filter_open_paran_to_ast(token_stream)
+    else:
+        assert False, \
+            f'Should not be receiving {tok} after FilterStartToken'
 
 
 def _attribute_to_ast(root_token, current_model, token_stream, registry):
