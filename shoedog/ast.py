@@ -1,7 +1,6 @@
 from sqlalchemy import inspect
 from shoedog.tokenizer import Toks
 from shoedog.utils import peek
-from shoedog.consts import binary_logical_ops
 
 
 class AstNode:
@@ -16,7 +15,9 @@ class AstNode:
         raise NotImplementedError(f'Node {self.__name__} has not implemented eval')
 
     def __repr__(self):
-        return self.as_string() + '\n' + '\n'.join(['\n'.join([f'\t{l}' for l in c.__repr__().split('\n')]) for c in self.children])
+        return self.as_string() + '\n' + \
+            '\n'.join(['\n'.join([f'\t{l}' for l in c.__repr__().split('\n')])
+                       for c in self.children])
 
 
 class RootNode(AstNode):
@@ -111,7 +112,9 @@ class BinaryLogicNode(AstNode):
         return f'<BinaryLogicNode {self.op}>'
 
     def __repr__(self):
-        return self.as_string() + '\n' + '\n'.join(['\n'.join([f'\t{l}' for l in c.__repr__().split('\n')]) for c in [self.left, self.right]])
+        return self.as_string() + '\n' + \
+            '\n'.join(['\n'.join([f'\t{l}' for l in c.__repr__().split('\n')])
+                       for c in [self.left, self.right]])
 
 
 def _tokens_to_ast(root_token, current_model, token_stream, registry):
