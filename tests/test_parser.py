@@ -1,7 +1,8 @@
 import pytest
 from shoedog.tokenizer import Toks
-from shoedog.ast import tokens_to_ast, RootNode, RelationshipNode, \
+from shoedog.ast import RootNode, RelationshipNode, \
     AttributeNode, FilterNode, BinaryLogicNode
+from shoedog.parser import tokens_to_ast
 from shoedog.registry import build_registry
 from tests.mock_app import db, Sample, Tube
 
