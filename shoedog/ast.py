@@ -1,5 +1,6 @@
 from sqlalchemy import inspect
 
+
 class AstNode:
     """ A node in the AST tree """
     def __init__(self, children):
@@ -57,6 +58,7 @@ class AttributeNode(AstNode):
     def __init__(self, registry, root_model, attr_name, children=[]):
         super().__init__(children)
         self.attr = getattr(root_model, attr_name)
+        self.model = root_model
 
     def __eq__(self, other):
         return type(other) == type(self) and \
