@@ -1,4 +1,4 @@
-from sqlalchemy.orm import contains_eager, lazyload, aliased
+from sqlalchemy.orm import contains_eager, lazyload, aliased, load_only
 from sqlalchemy import and_, or_
 from shoedog.ast import RootNode, RelationshipNode, AttributeNode, BinaryLogicNode, FilterNode
 
@@ -53,8 +53,8 @@ def _eval_ast(ast, query, current_model, current_rel):
         return query
     elif isinstance(ast, AttributeNode):
         attr = getattr(current_model, ast.attr.key)
-        # TODO: Figure out how to only return certain entities
-        # query = query.with_entities(attr)
+        # TODO: Pass in the entire rel path so we can do load_only
+        # query = query.options(load_only(attr))
         if ast.children:
             filters = _eval_filters(ast.children[0], attr, current_rel)
             query = query.filter(filters)

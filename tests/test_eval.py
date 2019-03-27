@@ -11,44 +11,6 @@ from shoedog.ast import RootNode, AttributeNode, RelationshipNode, BinaryLogicNo
 
 mock_registry = build_registry(db)
 
-
-# Insert mock data
-@pytest.fixture
-def samples():
-    sample_1 = Sample(
-        date=date(year=2017, month=1, day=2),
-        tubes=[
-            Tube(name='tube_1_1', type='a'),
-            Tube(name='tube_1_2', type='c'),
-        ]
-    )
-    db.session.add(sample_1)
-    sample_2 = Sample(
-        date=date(year=2016, month=12, day=31),
-        tubes=[
-            Tube(name='tube_2_1', type='a'),
-            Tube(name='tube_2_2', type='c'),
-        ]
-    )
-    db.session.add(sample_2)
-    sample_3 = Sample(
-        date=date(year=2017, month=1, day=2),
-        tubes=[
-            Tube(name='tube_3_1', type='c'),
-            Tube(name='tube_3_2', type='c'),
-        ]
-    )
-    db.session.add(sample_3)
-    sample_4 = Sample(
-        date=date(year=2017, month=1, day=2),
-        tubes=[
-            Tube(name='tube_4_1', type='d'),
-        ]
-    )
-    db.session.add(sample_4)
-    db.session.flush()
-
-
 """
 query Sample {
     id
@@ -77,6 +39,40 @@ test_ast_1 = RootNode(mock_registry, 'Sample', children=[
 ])
 
 
-def test_eval(session, samples):
+def test_eval(session):
+    sample_1 = Sample(
+        date=date(year=2017, month=1, day=2),
+        tubes=[
+            Tube(name='tube_1_1', type='a'),
+            Tube(name='tube_1_2', type='c'),
+        ]
+    )
+    session.add(sample_1)
+    sample_2 = Sample(
+        date=date(year=2016, month=12, day=31),
+        tubes=[
+            Tube(name='tube_2_1', type='a'),
+            Tube(name='tube_2_2', type='c'),
+        ]
+    )
+    session.add(sample_2)
+    sample_3 = Sample(
+        date=date(year=2017, month=1, day=2),
+        tubes=[
+            Tube(name='tube_3_1', type='c'),
+            Tube(name='tube_3_2', type='c'),
+        ]
+    )
+    session.add(sample_3)
+    sample_4 = Sample(
+        date=date(year=2017, month=1, day=2),
+        tubes=[
+            Tube(name='tube_4_1', type='d'),
+        ]
+    )
+    session.add(sample_4)
+    session.flush()
     e = eval_ast(test_ast_1, session)
-    print(e)
+
+    assert len(e) == 2
+    assert {s.id for s in e} == {sample_1.id, sample_3.id}
