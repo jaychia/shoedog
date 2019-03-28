@@ -129,27 +129,37 @@ def test_eval_2(session):
     # The only sample that fits the criteria
     sample_1 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_1)
     sample_2 = Sample(
         tube=Tube(name='bad', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_2)
     sample_3 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='bad')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_3)
     sample_4 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='bad', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='bad',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_4)
     sample_5 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='bad')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='bad')))
     )
     session.add(sample_5)
     sample_6 = Sample(
@@ -159,12 +169,16 @@ def test_eval_2(session):
     session.add(sample_6)
     sample_7 = Sample(
         tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')))
     )
     session.add(sample_7)
     sample_8 = Sample(
         tube=Tube(name='only-this-self-sample-tube-self-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-tube')))
     )
     session.add(sample_8)
     session.flush()

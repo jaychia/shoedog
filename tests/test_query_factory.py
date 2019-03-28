@@ -117,42 +117,58 @@ def test_end_to_end_2(session):
     sample_1 = Sample(
         name='I should be the only one being returned',
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_1)
     sample_2 = Sample(
         tube=Tube(name='bad', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_2)
     sample_3 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='bad')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_3)
     sample_4 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='bad', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+        self_sample=Sample(
+            name='bad',
+            tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
     )
     session.add(sample_4)
     sample_5 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='bad')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='bad')))
     )
     session.add(sample_5)
     sample_6 = Sample(
         tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube()))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube()))
     )
     session.add(sample_6)
     sample_7 = Sample(
         tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')))
     )
     session.add(sample_7)
     sample_8 = Sample(
         tube=Tube(name='only-this-self-sample-tube-self-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-tube')))
+        self_sample=Sample(
+            name='only-this-self-sample',
+            tube=Tube(self_tube=Tube(name='only-this-tube')))
     )
     session.add(sample_8)
     session.flush()
@@ -196,4 +212,3 @@ def test_end_to_end_2(session):
                    'self_tube_id': None,
                    'type': None},
           'tube_id': 1}]
-
