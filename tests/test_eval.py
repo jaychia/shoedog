@@ -157,13 +157,17 @@ def test_eval_2(session):
         self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube()))
     )
     session.add(sample_6)
-    sample_6 = Sample(
-        tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
-        self_sample=Sample(name='only-this-self-sample', tube=Tube())
+    sample_7 = Sample(
+        tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')))
     )
-    session.add(sample_6)
+    session.add(sample_7)
+    sample_8 = Sample(
+        tube=Tube(name='only-this-self-sample-tube-self-tube', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-tube')))
+    )
+    session.add(sample_8)
     session.flush()
-
     e = eval_ast(test_ast_2, session)
     assert len(e) == 1
     assert {s.id for s in e} == {sample_1.id}
