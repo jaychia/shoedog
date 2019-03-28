@@ -11,13 +11,12 @@ qf = QueryFactory(db)
 def test_end_to_end_1(session):
     q = '''
         query Sample {
-        id
-        tubes {
-            name
-            type [any in ['a', 'b'] or all != 'c']
+            id
+            tubes {
+                name
+                type [all != 'c']
+            }
         }
-        date [((* < '2017-01-31') or * == '2017-12-31') and ((* > '2017-1-1'))]
-    }
     '''
     sample_1 = Sample(
         date=date(year=2017, month=1, day=2),
@@ -56,41 +55,19 @@ def test_end_to_end_1(session):
 
     # TODO: Change test after implementing returning only
     # specified fields
+    print(json_response)
     assert json_response == \
         [{'date': '2017-01-02',
-          'id': 1,
+          'id': 4,
           'name': None,
           'self_sample_id': None,
           'tube_id': None,
           'tubes': [{'date': None,
-                     'id': 1,
-                     'name': 'tube_1_1',
-                     'sample_id': 1,
+                     'id': 7,
+                     'name': 'tube_4_1',
+                     'sample_id': 4,
                      'self_tube_id': None,
-                     'type': 'a'},
-                    {'date': None,
-                     'id': 2,
-                     'name': 'tube_1_2',
-                     'sample_id': 1,
-                     'self_tube_id': None,
-                     'type': 'c'}]},
-         {'date': '2017-01-02',
-          'id': 3,
-          'name': None,
-          'self_sample_id': None,
-          'tube_id': None,
-          'tubes': [{'date': None,
-                     'id': 5,
-                     'name': 'tube_3_1',
-                     'sample_id': 3,
-                     'self_tube_id': None,
-                     'type': 'c'},
-                    {'date': None,
-                     'id': 6,
-                     'name': 'tube_3_2',
-                     'sample_id': 3,
-                     'self_tube_id': None,
-                     'type': 'c'}]}]
+                     'type': 'd'}]}]
 
 
 def test_end_to_end_2(session):

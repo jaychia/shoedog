@@ -69,6 +69,7 @@ def test_eval(session):
         date=date(year=2017, month=1, day=2),
         tubes=[
             Tube(name='tube_4_1', type='d'),
+            Tube(name='tube_4_1', type='d'),
         ]
     )
     session.add(sample_4)
@@ -76,7 +77,7 @@ def test_eval(session):
     e = eval_ast(test_ast_1, session)
 
     assert len(e) == 2
-    assert {s.id for s in e} == {sample_1.id, sample_3.id}
+    assert {s.id for s in e} == {sample_1.id, sample_4.id}
 
 
 """
