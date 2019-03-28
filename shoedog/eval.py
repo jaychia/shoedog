@@ -1,7 +1,29 @@
+from datetime import datetime
+from sqlalchemy.types import Date
+
 from sqlalchemy.orm import contains_eager, lazyload, aliased, load_only
 from sqlalchemy import and_, or_
 from shoedog.ast import RootNode, RelationshipNode, AttributeNode, BinaryLogicNode, FilterNode
 from sqlalchemy import inspect
+
+FMAP = {
+    '==': '__eq__',
+    '!=': '__ne__',
+    '>': '__gt__',
+    '<': '__lt__',
+    '>=': '__gte__',
+    '<=': '__lte__',
+    'in': 'in_'
+}
+
+
+def _cast_obj(raw_obj, attr):
+    # TODO: Add more custom parsing for SQLAlchemy types
+    # Possibly allow for custom type parsing here too
+    if isinstance(attr.type, Date):
+        return datetime.strptime(raw_obj, '%Y-%m-%d')
+    else:
+        return raw_obj
 
 
 def _eval_filters(ast, attr, rel, alias):
@@ -19,32 +41,24 @@ def _eval_filters(ast, attr, rel, alias):
         else:
             raise NotImplementedError(f'Binary op {ast.op} not implemented')
     elif isinstance(ast, FilterNode):
-        f = {
-            '==': '__eq__',
-            '!=': '__ne__',
-            '>': '__gt__',
-            '<': '__lt__',
-            '>=': '__gte__',
-            '<=': '__lte__',
-            'in': 'in_'
-        }
+        obj = _cast_obj(ast.obj, attr)
 
         if ast.subject == 'any':
             if rel is None or not rel.property.uselist:
                 e = 'root query class' if rel is None else rel
                 raise SyntaxError(f'Cannot specify any filter on {e}')
-            return rel.any(getattr(attr, f[ast.op])(ast.obj))
+            return rel.any(getattr(attr, FMAP[ast.op])(obj))
 
         elif ast.subject == 'all':
             if rel is None or not rel.property.uselist:
                 e = 'root query class' if rel is None else rel
                 raise SyntaxError(f'Cannot specify all filter on {e}')
-            return ~rel.any(getattr(attr, f[ast.op])(ast.obj))
+            return ~rel.any(getattr(attr, FMAP[ast.op])(obj))
 
         elif ast.subject == '*':
             if rel is not None and rel.property.uselist:
                 raise SyntaxError(f'Cannot specify * filter on singular relationship {rel}')
-            return getattr(attr, f[ast.op])(ast.obj)
+            return getattr(attr, FMAP[ast.op])(obj)
 
         else:
             raise SyntaxError(f'Invalid subject for _eval_filters {ast.subject}')

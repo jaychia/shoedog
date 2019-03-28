@@ -31,10 +31,10 @@ test_ast_1 = RootNode(mock_registry, 'Sample', children=[
             'and',
             BinaryLogicNode(
                 'or',
-                FilterNode('*', '<', date(year=2017, month=1, day=31)),
-                FilterNode('*', '==', date(year=2017, month=12, day=31)),
+                FilterNode('*', '<', '2017-1-31'),
+                FilterNode('*', '==', '2017-12-31'),
             ),
-            FilterNode('*', '>', date(year=2017, month=1, day=1)),
+            FilterNode('*', '>', '2017-1-1'),
         )
     ])
 ])
