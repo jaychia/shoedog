@@ -1,8 +1,5 @@
-import pytest
-
 from datetime import date
 from tests.mock_app import db, Sample, Tube
-from shoedog.parser import tokens_to_ast
 from shoedog.registry import build_registry
 from shoedog.eval import eval_ast
 from shoedog.ast import RootNode, AttributeNode, RelationshipNode, BinaryLogicNode, \
@@ -32,8 +29,12 @@ test_ast_1 = RootNode(mock_registry, 'Sample', children=[
     AttributeNode(mock_registry, Sample, 'date', children=[
         BinaryLogicNode(
             'and',
-            BinaryLogicNode('or', FilterNode('*', '<', date(year=2017, month=1, day=31)), FilterNode('*', '==', date(year=2017, month=12, day=31))),
-            FilterNode('*', '>', date(year=2017, month=1, day=1))
+            BinaryLogicNode(
+                'or',
+                FilterNode('*', '<', date(year=2017, month=1, day=31)),
+                FilterNode('*', '==', date(year=2017, month=12, day=31)),
+            ),
+            FilterNode('*', '>', date(year=2017, month=1, day=1)),
         )
     ])
 ])
@@ -76,3 +77,93 @@ def test_eval(session):
 
     assert len(e) == 2
     assert {s.id for s in e} == {sample_1.id, sample_3.id}
+
+
+"""
+query Sample {
+    id
+    tube {
+        name [* == 'only-this-tube']
+        self_tube {
+            name [* == 'only-this-tube-self-tube']
+        }
+    }
+    self_sample {
+        name [* == 'only-this-self-sample']
+        tube {
+            self_tube {
+                name [* == 'only-this-self-sample-tube-self-tube']
+            }
+        }
+    }
+}
+"""
+test_ast_2 = RootNode(mock_registry, 'Sample', children=[
+    AttributeNode(mock_registry, Sample, 'id'),
+    RelationshipNode(mock_registry, Sample, 'tube', children=[
+        AttributeNode(mock_registry, Tube, 'name', children=[
+            FilterNode('*', '==', 'only-this-tube')
+        ]),
+        RelationshipNode(mock_registry, Tube, 'self_tube', children=[
+            AttributeNode(mock_registry, Tube, 'name', children=[
+                FilterNode('*', '==', 'only-this-tube-self-tube')
+            ]),
+        ]),
+    ]),
+    RelationshipNode(mock_registry, Sample, 'self_sample', children=[
+        AttributeNode(mock_registry, Sample, 'name', children=[
+            FilterNode('*', '==', 'only-this-self-sample')
+        ]),
+        RelationshipNode(mock_registry, Sample, 'tube', children=[
+            RelationshipNode(mock_registry, Tube, 'self_tube', children=[
+                AttributeNode(mock_registry, Tube, 'name', children=[
+                    FilterNode('*', '==', 'only-this-self-sample-tube-self-tube')
+                ]),
+            ]),
+        ]),
+    ]),
+])
+
+
+def test_eval_2(session):
+    # The only sample that fits the criteria
+    sample_1 = Sample(
+        tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+    )
+    session.add(sample_1)
+    sample_2 = Sample(
+        tube=Tube(name='bad', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+    )
+    session.add(sample_2)
+    sample_3 = Sample(
+        tube=Tube(name='only-this-tube', self_tube=Tube(name='bad')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+    )
+    session.add(sample_3)
+    sample_4 = Sample(
+        tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='bad', tube=Tube(self_tube=Tube(name='only-this-self-sample-tube-self-tube')))
+    )
+    session.add(sample_4)
+    sample_5 = Sample(
+        tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube(name='bad')))
+    )
+    session.add(sample_5)
+    sample_6 = Sample(
+        tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube(self_tube=Tube()))
+    )
+    session.add(sample_6)
+    sample_6 = Sample(
+        tube=Tube(name='only-this-tube', self_tube=Tube(name='only-this-tube-self-tube')),
+        self_sample=Sample(name='only-this-self-sample', tube=Tube())
+    )
+    session.add(sample_6)
+    session.flush()
+
+    e = eval_ast(test_ast_2, session)
+    assert len(e) == 1
+    assert {s.id for s in e} == {sample_1.id}

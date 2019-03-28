@@ -260,6 +260,59 @@ def test_tokenizer_parser_test_1():
     )
 
 
+def test_tokenizer_parser_test_2():
+    query = '''
+        query Sample {
+            id
+            tube {
+                name [* == 'only-this-tube']
+                self_tube {
+                    name [* == 'only-this-tube-self-tube']
+                }
+            }
+            self_sample {
+                name [* == 'only-this-self-sample']
+                tube {
+                    self_tube {
+                        name [* == 'only-this-self-sample-tube-self-tube']
+                    }
+                }
+            }
+        }
+    '''
+    assert tuple(tokenize(query)) == (
+        Toks.RootQueryToken(query_model='Sample'),
+        Toks.AttributeToken(attribute_name='id'),
+        Toks.OpenObjectToken(rel='tube'),
+        Toks.AttributeToken(attribute_name='name'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='==', val='only-this-tube'),
+        Toks.FilterEndToken(),
+        Toks.OpenObjectToken(rel='self_tube'),
+        Toks.AttributeToken(attribute_name='name'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='==', val='only-this-tube-self-tube'),
+        Toks.FilterEndToken(),
+        Toks.CloseObjectToken(),
+        Toks.CloseObjectToken(),
+        Toks.OpenObjectToken(rel='self_sample'),
+        Toks.AttributeToken(attribute_name='name'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='==', val='only-this-self-sample'),
+        Toks.FilterEndToken(),
+        Toks.OpenObjectToken(rel='tube'),
+        Toks.OpenObjectToken(rel='self_tube'),
+        Toks.AttributeToken(attribute_name='name'),
+        Toks.FilterStartToken(),
+        Toks.FilterBoolToken(sel='*', op='==', val='only-this-self-sample-tube-self-tube'),
+        Toks.FilterEndToken(),
+        Toks.CloseObjectToken(),
+        Toks.CloseObjectToken(),
+        Toks.CloseObjectToken(),
+        Toks.CloseObjectToken(),
+    )
+
+
 def test_line_syntax_error():
     query = '''
        query Sample{

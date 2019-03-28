@@ -16,29 +16,6 @@ class ModelRegistry:
             (rel.mapper.class_.__name__, rel.key):
             rel.mapper.class_ for model in models for rel in inspect(model).relationships
         }
-        print(self._relationships_to_class)
-        # self._tablename_to_models = {
-        #     model.__tablename__: model for model in models
-        # }
-        # self._tablename_to_cols = {
-        #     model.__tablename__: inspect(model).columns
-        #     for model in models
-        # }
-        # self._tablename_to_rels = {
-        #     model.__tablename__: inspect(model).relationships
-        #     for model in models
-        # }
-        # self._tablename_to_poly_child = {
-        #     model.__tablename__:
-        #     {polymodel.__tablename__ for polymodel in
-        #      inspect(model).polymorphic_iterator
-        #      if polymodel != model} for model in models
-        # }
-        # self._tablename_to_poly_parent = {
-        #     child: model_tablename
-        #     for model_tablename in self._tablename_to_poly_child
-        #     for child in self._tablename_to_poly_child[model_tablename]
-        # }
 
     def get_model_with_name(self, root_model_name):
         model = self._name_to_models.get(root_model_name)

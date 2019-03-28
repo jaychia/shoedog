@@ -22,13 +22,17 @@ class Tube(db.Model):
     date = db.Column(Date)
     type = db.Column(db.String)
     sample_id = db.Column(db.Integer, db.ForeignKey('samples.id'))
+    self_tube_id = db.Column(db.Integer, db.ForeignKey('tubes.id'))
+    self_tube = db.relationship('Tube', uselist=False)
 
 
 class Sample(db.Model):
     __tablename__ = 'samples'
     id = db.Column(db.Integer, primary_key=True)
     tube_id = db.Column(db.Integer, db.ForeignKey('tubes.id'))
+    self_sample_id = db.Column(db.Integer, db.ForeignKey('samples.id'))
     tube = db.relationship('Tube', uselist=False, foreign_keys=[tube_id])
     tubes = db.relationship('Tube', uselist=True, foreign_keys=[Tube.sample_id])
     date = db.Column(Date)
     name = db.Column(db.String)
+    self_sample = db.relationship('Sample', uselist=False)

@@ -138,7 +138,6 @@ def _get_filter_tokens_from_string(filters):
                 'Should not be adding FilterEnd if lexer_ptr not at end of filter'
             continue
         else:
-            print(filters[lexer_ptr])
             m = filter_regex.match(filters[lexer_ptr:])
             sel, op, val = _validate_and_parse_filter(m, filters, lexer_ptr)
             filter_toks += (Toks.FilterBoolToken(sel=sel, op=op, val=val),)
