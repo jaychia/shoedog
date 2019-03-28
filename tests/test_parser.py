@@ -68,9 +68,7 @@ test_token_ast_1 = RootNode(mock_registry, 'Sample', children=[
 
 
 def test_tokens_to_ast_1():
-    root, stream = tokens_to_ast(test_token_gen_1, mock_registry)
-    with pytest.raises(StopIteration):
-        next(stream)
+    root = tokens_to_ast(test_token_gen_1, mock_registry)
     assert root == test_token_ast_1
 
 """
@@ -152,7 +150,5 @@ test_token_ast_2 = RootNode(mock_registry, 'Sample', children=[
 
 
 def test_tokens_to_ast_2():
-    root, stream = tokens_to_ast(test_token_gen_2, mock_registry)
-    with pytest.raises(StopIteration):
-        next(stream)
+    root = tokens_to_ast(test_token_gen_2, mock_registry)
     assert root == test_token_ast_2

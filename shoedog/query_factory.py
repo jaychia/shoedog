@@ -15,6 +15,6 @@ class QueryFactory():
         """Parses a string and returns a SQLAlchemy query"""
         token_list = tokenize(query_string)
         ast = tokens_to_ast(token_list, self.model_registry)
-        query_response = eval_ast(ast, self.db)
+        query_response = eval_ast(ast, self.db.session)
         json_response = serialize_to_json(query_response)
         return json_response

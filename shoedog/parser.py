@@ -169,4 +169,4 @@ def _root_query_to_ast(root_token, token_stream, registry):
 def tokens_to_ast(token_stream, registry):
     """ Returns the AST given a list of tokens and the model registry """
     root_token = next(token_stream)
-    return _tokens_to_ast(root_token, None, token_stream, registry)
+    return _tokens_to_ast(root_token, None, token_stream, registry)[0]
