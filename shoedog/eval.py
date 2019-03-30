@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.types import Date
 
-from sqlalchemy.orm import contains_eager, lazyload, aliased, load_only
+from sqlalchemy.orm import contains_eager, lazyload, aliased
 from sqlalchemy import and_, or_
 from shoedog.ast import RootNode, RelationshipNode, AttributeNode, BinaryLogicNode, FilterNode
 from sqlalchemy import inspect

@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.types import Date
+from shoedog.api import shoedoggify
 
 
 def create_app(name, extra_config):
@@ -11,6 +12,7 @@ def create_app(name, extra_config):
     return app
 
 app = create_app(__name__, {})
+app.app_context().push()
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -36,3 +38,8 @@ class Sample(db.Model):
     date = db.Column(Date)
     name = db.Column(db.String)
     self_sample = db.relationship('Sample', uselist=False)
+
+
+db.create_all()
+
+shoedoggify(app, db)

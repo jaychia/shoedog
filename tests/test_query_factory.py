@@ -285,4 +285,3 @@ def test_end_to_end_3(session):
                    'self_tube_id': None,
                    'type': None},
           'tube_id': 1}]
-

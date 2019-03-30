@@ -1,5 +1,5 @@
 import json
-from flask import request
+from flask import request, Response
 from shoedog.query_factory import QueryFactory
 
 
@@ -8,5 +8,6 @@ def shoedoggify(app, db):
 
     @app.route('/shoedog', methods=['POST'])
     def shoedog():
-        res = qf.parse_query(request.data)
-        return json.dumps(res), 200
+        data = request.data.decode('utf-8')
+        res = qf.parse_query(data)
+        return Response(json.dumps(res), mimetype='application/json'), 200

@@ -2,6 +2,7 @@ import os
 import pytest
 
 from .mock_app import create_app, db as _db
+from shoedog.api import shoedoggify
 
 
 TESTDB = 'test_project.db'
@@ -41,6 +42,8 @@ def db(app, request):
 
     _db.init_app(app)
     _db.create_all()
+
+    shoedoggify(app, _db)
 
     request.addfinalizer(teardown)
     return _db
